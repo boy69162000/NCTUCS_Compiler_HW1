@@ -17,7 +17,8 @@ typedef enum TokenType { FloatDeclaration, IntegerDeclaration,
                          PrintOp,
                          AssignmentOp,
                          PlusOp, MinusOp, MulOp, DivOp,
-                         Alphabet,
+                         Identifier,
+                         Alphabet,  // XXX: not to use
                          IntValue, FloatValue,
                          EOFsymbol } TokenType;
 
@@ -38,11 +39,13 @@ typedef enum Operation { Plus, Minus, Mul, Div, Assign,
    scanning, parsing, AST, type-checking, building the symbol table, and code generation.
 *****************************************************************************************/
 
-
+// Note that in the test data, the length of a variable name will not
+// exceed 256 characters, and the number of different variables will
+// not exceed 23 (to simplify later code generation).
 /* For scanner */
 typedef struct Token {
     TokenType type;
-    char tok[1025];    // long enough?
+    char tok[1025];     // token length: 1024( + '\0')
 } Token;
 
 /*** The following are nodes of the AST. ***/
@@ -50,7 +53,7 @@ typedef struct Token {
 /* For decl production or say one declaration statement */
 typedef struct Declaration {
     DataType type;
-    char name;
+    char name[1025];
 } Declaration;
 
 /*
@@ -125,7 +128,7 @@ typedef struct SymbolTable {
 
 
 // scanning
-Token getNumericToken( FILE *source, char c );
+Token getNumericToken( FILE *source, int c );
 Token scanner( FILE *source );
 
 // parsing

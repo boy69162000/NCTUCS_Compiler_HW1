@@ -27,6 +27,7 @@ int main (int argc, char *argv[]) {
             symtab = build(program);
             check(&program, &symtab);
             gencode(program, target);
+            fclose(target);
         }
     }
     else {
@@ -41,7 +42,7 @@ int main (int argc, char *argv[]) {
 /*********************************************
   Scanning
  *********************************************/
-Token getNumericToken (FILE *source, char c) {
+Token getNumericToken (FILE *source, int c) {
 // token: \d+\.\d+
     Token token;
     int i = 0;
@@ -79,7 +80,7 @@ Token getNumericToken (FILE *source, char c) {
 }
 
 Token scanner ( FILE *source ) {
-    char c;
+    int c;
     Token token;
 
     // scan till end-of-file
@@ -97,16 +98,34 @@ Token scanner ( FILE *source ) {
         token.tok[0] = c;
         token.tok[1] = '\0';
         if ( islower(c) ) {
-            // f i p for special use
-            if ( c == 'f' )
-                token.type = FloatDeclaration;
-            else if ( c == 'i' )
-                token.type = IntegerDeclaration;
-            else if ( c == 'p' )
-                token.type = PrintOp;
-            else
-                token.type = Alphabet;
-            return token;
+            // pick up the next chak
+            int cn = fgetc(source);
+
+            // case: \w, c + cn = char + space
+            if (isspace(cn)) {
+                // f i p for special use
+                if ( c == 'f' )
+                    token.type = FloatDeclaration;
+                else if ( c == 'i' )
+                    token.type = IntegerDeclaration;
+                else if ( c == 'p' )
+                    token.type = PrintOp;
+                else
+                    token.type = Identifier;
+
+                return token;
+            }
+            // case: \w{2,}, c + c* + space
+            else {
+                int i = 1;
+                while (!isspace(cn)) {
+                    token.tok[i++] = cn;
+                    cn = fget(source);
+                }
+                token.tok[i] = '\0';
+                token.type = Identifier;
+                return token;
+            }
         }
 
         // token: operators
@@ -154,9 +173,9 @@ Declaration parseDeclaration ( FILE *source, Token token ) {
             // get next token
             token2 = scanner(source);
             // can't be f/i/p
-            if (strcmp(token2.tok, "f") == 0 ||
-                    strcmp(token2.tok, "i") == 0 ||
-                    strcmp(token2.tok, "p") == 0) {
+            if (token2.type == FloatDeclaration ||
+                token2.type == IntegerDeclaration ||
+                token2.type == PrintOp) {
                 printf("Syntax Error: %s cannot be used as id\n", token2.tok);
                 exit(1);
             }
@@ -367,7 +386,7 @@ Declaration makeDeclarationNode ( Token declare_type, Token identifier ) {
         default:
             break;
     }
-    tree_node.name = identifier.tok[0];
+    strncpy(tree_node.name, identifier.tok, strlen(identifier.tok));
 
     return tree_node;
 }
@@ -434,7 +453,8 @@ void InitializeTable ( SymbolTable *table ) {
         table->table[i] = Notype;
 }
 
-void add_table ( SymbolTable *table, char c, DataType t ) {
+void add_table ( SymbolTable *table, char* c, DataType t ) {
+    // XXX: the table should fix to use a name as key
     int index = (int)(c - 'a');
 
     if(table->table[index] != Notype)
@@ -708,7 +728,7 @@ void test_parser ( FILE *source ) {
             printf("i ");
         if (decl.type == Float)
             printf("f ");
-        printf("%c ",decl.name);
+        printf("%s ",decl.name);
         decls = decls->rest;
     }
 
