@@ -123,7 +123,8 @@ typedef struct Program {
 
 /* For building the symbol table */
 typedef struct SymbolTable {
-    DataType table[26];
+    DataType table[23];
+    char *name[23];
 } SymbolTable;
 
 
@@ -150,7 +151,7 @@ Program parser( FILE *source );
 
 // symbol table
 void InitializeTable( SymbolTable *table );
-void add_table( SymbolTable *table, char c, DataType t );
+void add_table( SymbolTable *table, char* c, DataType t , int index);
 SymbolTable build( Program program );
 
 // type checking

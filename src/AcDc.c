@@ -449,16 +449,18 @@ Program parser ( FILE *source ) {
 void InitializeTable ( SymbolTable *table ) {
     int i;
 
-    for (i = 0 ; i < 26; i++)
+    for (i = 0 ; i < 23; i++)
         table->table[i] = Notype;
 }
 
-void add_table ( SymbolTable *table, char* c, DataType t ) {
+void add_table ( SymbolTable *table, char* c, DataType t , int index) {
     // XXX: the table should fix to use a name as key
-    int index = (int)(c - 'a');
 
-    if(table->table[index] != Notype)
+    if(table->table[index] != Notype){
         printf("Error : id %c has been declared\n", c);//error
+        exit(1);
+    }
+    strcpy(table->name[index], c);
     table->table[index] = t;
 }
 
@@ -466,12 +468,14 @@ SymbolTable build ( Program program ) {
     SymbolTable table;
     Declarations *decls = program.declarations;
     Declaration current;
+    int i = 0;
 
     InitializeTable(&table);
 
     while (decls !=NULL) {
         current = decls->first;
-        add_table(&table, current.name, current.type);
+        table.name[i] = (char*)malloc(sizeof(char)*256);
+        add_table(&table, current.name, current.type, i++);
         decls = decls->rest;
     }
 
