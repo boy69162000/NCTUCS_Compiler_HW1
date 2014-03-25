@@ -534,7 +534,7 @@ void convertType ( Expression * old, DataType type ) {
     if (old->type == Int && type == Float) {
         Expression *tmp = (Expression *)malloc( sizeof(Expression) );
         if (old->v.type == Identifier)
-            printf("convert to float %c \n",old->v.val.id);
+            printf("convert to float %s \n",old->v.val.id);
         else
             printf("convert to float %d \n", old->v.val.ivalue);
         tmp->v = old->v;
@@ -578,7 +578,7 @@ void checkexpression ( Expression * expr, SymbolTable * table ) {
         switch (expr->v.type) {
             case Identifier:
                 strcpy(c, expr->v.val.id);
-                printf("identifier : %c\n",c);
+                printf("identifier : %s\n",c);
                 expr->type = lookup_table(table, c);
                 break;
             case IntConst:
@@ -611,7 +611,7 @@ void checkexpression ( Expression * expr, SymbolTable * table ) {
 void checkstmt ( Statement *stmt, SymbolTable * table ) {
     if (stmt->type == Assignment) {
         AssignmentStatement assign = stmt->stmt.assign;
-        printf("assignment : %c \n",assign.id);
+        printf("assignment : %s \n",assign.id);
         checkexpression(assign.expr, table);
         stmt->stmt.assign.type = lookup_table(table, assign.id);
         if (assign.expr->type == Float && stmt->stmt.assign.type == Int) {
@@ -622,7 +622,7 @@ void checkstmt ( Statement *stmt, SymbolTable * table ) {
         }
     }
     else if (stmt->type == Print){
-        printf("print : %c \n",stmt->stmt.variable);
+        printf("print : %s \n",stmt->stmt.variable);
         lookup_table(table, stmt->stmt.variable);
     }
     else
@@ -660,7 +660,7 @@ void fprint_expr ( FILE *target, Expression *expr) {
     if (expr->leftOperand == NULL) {
         switch ( (expr->v).type ) {
             case Identifier:
-                fprintf(target,"l%c\n",(expr->v).val.id);
+                fprintf(target,"l%s\n",(expr->v).val.id);
                 break;
             case IntConst:
                 fprintf(target,"%d\n",(expr->v).val.ivalue);
@@ -694,7 +694,7 @@ void gencode (Program prog, FILE * target) {
         stmt = stmts->first;
         switch (stmt.type) {
             case Print:
-                fprintf(target,"l%c\n",stmt.stmt.variable);
+                fprintf(target,"l%s\n",stmt.stmt.variable);
                 fprintf(target,"p\n");
                 break;
             case Assignment:
@@ -706,7 +706,7 @@ void gencode (Program prog, FILE * target) {
                    else if(stmt.stmt.assign.type == Float){
                    fprintf(target,"5 k\n");
                    }*/
-                fprintf(target,"s%c\n",stmt.stmt.assign.id);
+                fprintf(target,"s%s\n",stmt.stmt.assign.id);
                 fprintf(target,"0 k\n");
                 break;
         }
@@ -727,7 +727,7 @@ void print_expr (Expression *expr) {
         print_expr(expr->leftOperand);
         switch ((expr->v).type) {
             case Identifier:
-                printf("%c ", (expr->v).val.id);
+                printf("%s ", (expr->v).val.id);
                 break;
             case IntConst:
                 printf("%d ", (expr->v).val.ivalue);
@@ -782,11 +782,11 @@ void test_parser ( FILE *source ) {
     while (stmts != NULL) {
         stmt = stmts->first;
         if (stmt.type == Print) {
-            printf("p %c ", stmt.stmt.variable);
+            printf("p %s ", stmt.stmt.variable);
         }
 
         if (stmt.type == Assignment) {
-            printf("%c = ", stmt.stmt.assign.id);
+            printf("%s = ", stmt.stmt.assign.id);
             print_expr(stmt.stmt.assign.expr);
         }
         stmts = stmts->rest;

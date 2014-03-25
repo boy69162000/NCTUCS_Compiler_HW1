@@ -18,7 +18,7 @@ typedef enum TokenType { FloatDeclaration, IntegerDeclaration,
                          AssignmentOp,
                          PlusOp, MinusOp, MulOp, DivOp,
                          Identifier,
-                         Alphabet,  // XXX: not to use
+                         Alphabet,  // XXX: not to use //now in use
                          IntValue, FloatValue,
                          EOFsymbol } TokenType;
 
