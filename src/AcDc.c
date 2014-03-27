@@ -261,6 +261,20 @@ Expression *parseExpressionTail ( FILE *source, Expression *lvalue ) {
     int i = 0;
 
     switch (token.type) {
+        case MulOp:
+            expr = (Expression *)malloc( sizeof(Expression) );
+            (expr->v).type = MulNode;
+            (expr->v).val.op = Mul;
+            expr->leftOperand = lvalue;
+            expr->rightOperand = parseValue(source);
+            return parseExpressionTail(source, expr);
+        case DivOp:
+            expr = (Expression *)malloc( sizeof(Expression) );
+            (expr->v).type = DivNode;
+            (expr->v).val.op = Div;
+            expr->leftOperand = lvalue;
+            expr->rightOperand = parseValue(source);
+            return parseExpressionTail(source, expr);
         case PlusOp:
             expr = (Expression *)malloc( sizeof(Expression) );
             (expr->v).type = PlusNode;
@@ -303,7 +317,20 @@ Expression *parseExpressionTail ( FILE *source, Expression *lvalue ) {
 //
 // Expr -> plus Val Expr
 //      |  minus Val Expr
+//      |  mul Val Expr
+//      |  div Val Expr
 //      |  \
+//
+// XXX: we need a new grammar to handle ambiguity
+// add a new type of Expression Expr_t
+//
+// Expr -> plus Val Expr_t
+//      |  minus Val Expr_t
+//      |  Expr_t
+//
+// Expr_t -> mul Val Expr
+//        |  div Val Expr
+//        | \
 //
 Expression *parseExpression ( FILE *source, Expression *lvalue ) {
     Token token = scanner(source);
@@ -312,6 +339,20 @@ Expression *parseExpression ( FILE *source, Expression *lvalue ) {
     int i = 0;
 
     switch (token.type) {
+        case MulOp:
+            expr = (Expression *)malloc( sizeof(Expression) );
+            (expr->v).type = MulNode;
+            (expr->v).val.op = Mul;
+            expr->leftOperand = lvalue;
+            expr->rightOperand = parseValue(source);
+            return parseExpressionTail(source, expr);
+        case DivOp:
+            expr = (Expression *)malloc( sizeof(Expression) );
+            (expr->v).type = DivNode;
+            (expr->v).val.op = Div;
+            expr->leftOperand = lvalue;
+            expr->rightOperand = parseValue(source);
+            return parseExpressionTail(source, expr);
         case PlusOp:
             expr = (Expression *)malloc( sizeof(Expression) );
             (expr->v).type = PlusNode;
@@ -515,13 +556,14 @@ SymbolTable build ( Program program ) {
 
     InitializeTable(&table);
 
-    while (decls !=NULL) {
+    while (decls != NULL) {
         current = decls->first;
         table.name[i] = (char *)malloc(sizeof(char)*256);
         add_table(&table, current.name, current.type, i++);
         decls = decls->rest;
     }
 
+    // clear unused nodes
     while (i < 23) {
         table.name[i] = (char *)malloc(sizeof(char)*256);
         table.name[i++][0] = '\0';
