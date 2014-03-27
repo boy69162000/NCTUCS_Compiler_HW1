@@ -105,11 +105,11 @@ Token scanner ( FILE *source ) {
             // case: \w, c + cn = char + space
             if (isspace(cn)) {
                 // f i p for special use
-                if ( c == 'f' )
+                if (c == 'f')
                     token.type = FloatDeclaration;
-                else if ( c == 'i' )
+                else if (c == 'i')
                     token.type = IntegerDeclaration;
-                else if ( c == 'p' )
+                else if (c == 'p')
                     token.type = PrintOp;
                 else
                     token.type = Identifier;
@@ -207,10 +207,13 @@ Declarations *parseDeclarations ( FILE *source ) {
         // shouldn't here //actually they should be here
         // I mean, print / id and eof shouldn't be in declaration list
         case PrintOp:
+            ungetc(' ', source);
             ungetc(token.tok[0], source);
+            return NULL;
         case Identifier:
             while (token.tok[i] != '\0')
                 i++;
+            ungetc(' ', source);
             while (i > 0)
                 ungetc(token.tok[--i], source);
             return NULL;
@@ -281,9 +284,12 @@ Expression *parseExpressionTail ( FILE *source, Expression *lvalue ) {
             ungetc('=', source);
             while (token.tok[i] != '\0')
                 i++;
+            ungetc(' ', source);
             while (i > 0)
                 ungetc(token.tok[--i], source);
+            return lvalue;
         case PrintOp:
+            ungetc(' ', source);
             ungetc(token.tok[0], source);
             return lvalue;
         case EOFsymbol:
@@ -329,9 +335,12 @@ Expression *parseExpression ( FILE *source, Expression *lvalue ) {
             ungetc('=', source);
             while (token.tok[i] != '\0')
                 i++;
+            ungetc(' ', source);
             while (i > 0)
                 ungetc(token.tok[--i], source);
+            return NULL;
         case PrintOp:
+            ungetc(' ', source);
             ungetc(token.tok[0], source);
             return NULL;
         case EOFsymbol:

@@ -18,14 +18,14 @@ typedef enum TokenType { FloatDeclaration, IntegerDeclaration,
                          AssignmentOp,
                          PlusOp, MinusOp, MulOp, DivOp,
                          Identifier,
-                         Alphabet,  // XXX: not to use //now in use
+                         //Alphabet,  // XXX: not to use //now in use
                          IntValue, FloatValue,
                          EOFsymbol } TokenType;
 
 typedef enum DataType  { Int, Float, Notype } DataType;
 typedef enum StmtType  { Print, Assignment } StmtType;
 
-typedef enum ValueType { Identifier,
+typedef enum ValueType { IdentifierV,
                          IntConst, FloatConst,
                          PlusNode, MinusNode, MulNode, DivNode,
                          IntToFloatConvertNode } ValueType;
