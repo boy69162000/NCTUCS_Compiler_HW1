@@ -315,6 +315,17 @@ Expression *parseExpressionTail ( FILE *source, Expression *lvalue ) {
 //      |  div Val Expr
 //      |  \
 //
+// XXX: we need a new grammar to handle ambiguity
+// add a new type of Expression Expr_t
+//
+// Expr -> plus Val Expr_t
+//      |  minus Val Expr_t
+//      |  Expr_t
+//
+// Expr_t -> mul Val Expr
+//        |  div Val Expr
+//        | \
+//
 Expression *parseExpression ( FILE *source, Expression *lvalue ) {
     Token token = scanner(source);
     Token next_token;
