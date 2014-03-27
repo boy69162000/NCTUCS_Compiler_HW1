@@ -25,7 +25,7 @@ typedef enum TokenType { FloatDeclaration, IntegerDeclaration,
 typedef enum DataType  { Int, Float, Notype } DataType;
 typedef enum StmtType  { Print, Assignment } StmtType;
 
-typedef enum ValueType { Identifier,
+typedef enum ValueType { IdentifierV,
                          IntConst, FloatConst,
                          PlusNode, MinusNode, MulNode, DivNode,
                          IntToFloatConvertNode } ValueType;
