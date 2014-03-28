@@ -5,7 +5,7 @@
 #include "header.h"
 
 // XXX: use strncpy instead of strcpy Orz
-
+// fine
 int main (int argc, char *argv[]) {
     FILE *source, *target;
     Program program;
@@ -408,6 +408,19 @@ Expression *parseExpression_t ( FILE *source, Expression *lvalue ) {
 // Expr_t -> mul Val Expr
 //        |  div Val Expr
 //        |  Expr
+//
+// JJJ: I have an idea about grammars
+// 
+// Stmt -> id assign Expr 
+//      |  print id
+//
+// Expr -> Expr_t plus Expr
+//      |  Expr_t minus Expr
+//      |  Expr_t
+//
+// Expr_t -> Val mul Expr_t
+//        |  Val div Expr_t
+//        |  Val
 //
 Expression *parseExpression ( FILE *source, Expression *lvalue ) {
     Token token = scanner(source);
