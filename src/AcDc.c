@@ -261,6 +261,52 @@ Expression *parseExpressionTail ( FILE *source, Expression *lvalue ) {
     int i = 0;
 
     switch (token.type) {
+        case PlusOp:
+            expr = (Expression *)malloc( sizeof(Expression) );
+            (expr->v).type = PlusNode;
+            (expr->v).val.op = Plus;
+            expr->leftOperand = lvalue;
+            expr->rightOperand = parseValue(source);
+            return parseExpressionTail_t(source, expr);
+        case MinusOp:
+            expr = (Expression *)malloc( sizeof(Expression) );
+            (expr->v).type = MinusNode;
+            (expr->v).val.op = Minus;
+            expr->leftOperand = lvalue;
+            expr->rightOperand = parseValue(source);
+            return parseExpressionTail_t(source, expr);
+        case Identifier:
+            next_token = scanner(source);
+            if (next_token.type != AssignmentOp) {
+                printf("Syntax Error: Expect an numeric operator\n");
+                exit(1);
+            }
+            ungetc('=', source);
+            while (token.tok[i] != '\0')
+                i++;
+            ungetc(' ', source);
+            while (i > 0)
+                ungetc(token.tok[--i], source);
+            return lvalue;
+        case PrintOp:
+            ungetc(' ', source);
+            ungetc(token.tok[0], source);
+            return lvalue;
+        case EOFsymbol:
+            return lvalue;
+        default:
+            printf("Syntax Error: Expect a numeric value or an identifier %s\n", token.tok);
+            exit(1);
+    }
+}
+
+Expression *parseExpressionTail_t ( FILE *source, Expression *lvalue ) {
+    Token token = scanner(source);
+    Token next_token;
+    Expression *expr;
+    int i = 0;
+
+    switch (token.type) {
         case MulOp:
             expr = (Expression *)malloc( sizeof(Expression) );
             (expr->v).type = MulNode;
@@ -272,20 +318,6 @@ Expression *parseExpressionTail ( FILE *source, Expression *lvalue ) {
             expr = (Expression *)malloc( sizeof(Expression) );
             (expr->v).type = DivNode;
             (expr->v).val.op = Div;
-            expr->leftOperand = lvalue;
-            expr->rightOperand = parseValue(source);
-            return parseExpressionTail(source, expr);
-        case PlusOp:
-            expr = (Expression *)malloc( sizeof(Expression) );
-            (expr->v).type = PlusNode;
-            (expr->v).val.op = Plus;
-            expr->leftOperand = lvalue;
-            expr->rightOperand = parseValue(source);
-            return parseExpressionTail(source, expr);
-        case MinusOp:
-            expr = (Expression *)malloc( sizeof(Expression) );
-            (expr->v).type = MinusNode;
-            (expr->v).val.op = Minus;
             expr->leftOperand = lvalue;
             expr->rightOperand = parseValue(source);
             return parseExpressionTail(source, expr);
@@ -314,25 +346,7 @@ Expression *parseExpressionTail ( FILE *source, Expression *lvalue ) {
     }
 }
 
-//
-// Expr -> plus Val Expr
-//      |  minus Val Expr
-//      |  mul Val Expr
-//      |  div Val Expr
-//      |  \
-//
-// XXX: we need a new grammar to handle ambiguity
-// add a new type of Expression Expr_t
-//
-// Expr -> plus Val Expr_t
-//      |  minus Val Expr_t
-//      |  Expr_t
-//
-// Expr_t -> mul Val Expr
-//        |  div Val Expr
-//        | \
-//
-Expression *parseExpression ( FILE *source, Expression *lvalue ) {
+Expression *parseExpression_t ( FILE *source, Expression *lvalue ) {
     Token token = scanner(source);
     Token next_token;
     Expression *expr;
@@ -353,20 +367,69 @@ Expression *parseExpression ( FILE *source, Expression *lvalue ) {
             expr->leftOperand = lvalue;
             expr->rightOperand = parseValue(source);
             return parseExpressionTail(source, expr);
+        case Identifier:
+            next_token = scanner(source);
+            if (next_token.type != AssignmentOp) {
+                printf("Syntax Error: Expect an numeric operator\n");
+                exit(1);
+            }
+            ungetc('=', source);
+            while (token.tok[i] != '\0')
+                i++;
+            ungetc(' ', source);
+            while (i > 0)
+                ungetc(token.tok[--i], source);
+            return NULL;
+        case PrintOp:
+            ungetc(' ', source);
+            ungetc(token.tok[0], source);
+            return NULL;
+        case EOFsymbol:
+            return NULL;
+        default:
+            printf("Syntax Error: Expect a numeric value or an identifier %s\n", token.tok);
+            exit(1);
+    }
+}
+
+
+//
+// Expr -> plus Val Expr
+//      |  minus Val Expr
+//      |  \
+//
+// XXX: we need a new grammar to handle ambiguity
+// add a new type of Expression Expr_t
+//
+// Expr -> plus Val Expr_t
+//      |  minus Val Expr_t
+//      |  \
+//
+// Expr_t -> mul Val Expr
+//        |  div Val Expr
+//        |  Expr
+//
+Expression *parseExpression ( FILE *source, Expression *lvalue ) {
+    Token token = scanner(source);
+    Token next_token;
+    Expression *expr;
+    int i = 0;
+
+    switch (token.type) {
         case PlusOp:
             expr = (Expression *)malloc( sizeof(Expression) );
             (expr->v).type = PlusNode;
             (expr->v).val.op = Plus;
             expr->leftOperand = lvalue;
             expr->rightOperand = parseValue(source);
-            return parseExpressionTail(source, expr);
+            return parseExpressionTail_t(source, expr);
         case MinusOp:
             expr = (Expression *)malloc( sizeof(Expression) );
             (expr->v).type = MinusNode;
             (expr->v).val.op = Minus;
             expr->leftOperand = lvalue;
             expr->rightOperand = parseValue(source);
-            return parseExpressionTail(source, expr);
+            return parseExpressionTail_t(source, expr);
         case Identifier:
             next_token = scanner(source);
             if (next_token.type != AssignmentOp) {
@@ -701,6 +764,12 @@ void fprint_op ( FILE *target, ValueType op ) {
             break;
         case PlusNode:
             fprintf(target,"+\n");
+            break;
+        case MulNode:
+            fprintf(target,"*\n");
+            break;
+        case DivNode:
+            fprintf(target,"\\\n");
             break;
         default:
             fprintf(target,"Error in fprintf_op ValueType = %d\n",op);
