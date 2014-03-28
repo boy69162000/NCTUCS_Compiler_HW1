@@ -2,11 +2,14 @@ i a
 f b
 i c
 i d
-a = 2
+f e
+a = 1
 b = 2.1
 c = 1
 d = 2
-c = a + d * a
+e = a + d * b
+p a
+p b
 p c
 p d
-p b
+p e
