@@ -1,0 +1,15 @@
+i a
+f b
+i c
+i d
+f e
+a = 1
+b = 2.1
+c = 1
+d = 2
+e = a + d * b
+p a
+p b
+p c
+p d
+p e
