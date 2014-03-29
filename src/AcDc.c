@@ -261,20 +261,24 @@ Expression *parseExpressionTail ( FILE *source, Expression *lvalue ) {
     int i = 0;
 
     switch (token.type) {
-        case PlusOp:
+        case MulOp:
             expr = (Expression *)malloc( sizeof(Expression) );
-            (expr->v).type = PlusNode;
-            (expr->v).val.op = Plus;
+            (expr->v).type = MulNode;
+            (expr->v).val.op = Mul;
             expr->leftOperand = lvalue;
             expr->rightOperand = parseValue(source);
-            return parseExpressionTail_t(source, expr);
-        case MinusOp:
+            return parseExpressionTail(source, expr);
+        case DivOp:
             expr = (Expression *)malloc( sizeof(Expression) );
             (expr->v).type = MinusNode;
             (expr->v).val.op = Minus;
             expr->leftOperand = lvalue;
             expr->rightOperand = parseValue(source);
-            return parseExpressionTail_t(source, expr);
+            return parseExpressionTail(source, expr);
+        case PlusOp:
+        case MinusOp:
+            ungetc(token.tok[0], source);
+            return lvalue;
         case Identifier:
             next_token = scanner(source);
             if (next_token.type != AssignmentOp) {
@@ -299,99 +303,6 @@ Expression *parseExpressionTail ( FILE *source, Expression *lvalue ) {
             exit(1);
     }
 }
-
-Expression *parseExpressionTail_t ( FILE *source, Expression *lvalue ) {
-    Token token = scanner(source);
-    Token next_token;
-    Expression *expr;
-    int i = 0;
-
-    switch (token.type) {
-        case MulOp:
-            expr = (Expression *)malloc( sizeof(Expression) );
-            (expr->v).type = MulNode;
-            (expr->v).val.op = Mul;
-            expr->leftOperand = lvalue;
-            expr->rightOperand = parseValue(source);
-            return parseExpressionTail(source, expr);
-        case DivOp:
-            expr = (Expression *)malloc( sizeof(Expression) );
-            (expr->v).type = DivNode;
-            (expr->v).val.op = Div;
-            expr->leftOperand = lvalue;
-            expr->rightOperand = parseValue(source);
-            return parseExpressionTail(source, expr);
-        case Identifier:
-            next_token = scanner(source);
-            if (next_token.type != AssignmentOp) {
-                printf("Syntax Error: Expect an numeric operator\n");
-                exit(1);
-            }
-            ungetc('=', source);
-            while (token.tok[i] != '\0')
-                i++;
-            ungetc(' ', source);
-            while (i > 0)
-                ungetc(token.tok[--i], source);
-            return lvalue;
-        case PrintOp:
-            ungetc(' ', source);
-            ungetc(token.tok[0], source);
-            return lvalue;
-        case EOFsymbol:
-            return lvalue;
-        default:
-            printf("Syntax Error: Expect a numeric value or an identifier %s\n", token.tok);
-            exit(1);
-    }
-}
-
-Expression *parseExpression_t ( FILE *source, Expression *lvalue ) {
-    Token token = scanner(source);
-    Token next_token;
-    Expression *expr;
-    int i = 0;
-
-    switch (token.type) {
-        case MulOp:
-            expr = (Expression *)malloc( sizeof(Expression) );
-            (expr->v).type = MulNode;
-            (expr->v).val.op = Mul;
-            expr->leftOperand = lvalue;
-            expr->rightOperand = parseValue(source);
-            return parseExpressionTail(source, expr);
-        case DivOp:
-            expr = (Expression *)malloc( sizeof(Expression) );
-            (expr->v).type = DivNode;
-            (expr->v).val.op = Div;
-            expr->leftOperand = lvalue;
-            expr->rightOperand = parseValue(source);
-            return parseExpressionTail(source, expr);
-        case Identifier:
-            next_token = scanner(source);
-            if (next_token.type != AssignmentOp) {
-                printf("Syntax Error: Expect an numeric operator\n");
-                exit(1);
-            }
-            ungetc('=', source);
-            while (token.tok[i] != '\0')
-                i++;
-            ungetc(' ', source);
-            while (i > 0)
-                ungetc(token.tok[--i], source);
-            return NULL;
-        case PrintOp:
-            ungetc(' ', source);
-            ungetc(token.tok[0], source);
-            return NULL;
-        case EOFsymbol:
-            return NULL;
-        default:
-            printf("Syntax Error: Expect a numeric value or an identifier %s\n", token.tok);
-            exit(1);
-    }
-}
-
 
 //
 // Expr -> plus Val Expr
@@ -425,7 +336,9 @@ Expression *parseExpression_t ( FILE *source, Expression *lvalue ) {
 Expression *parseExpression ( FILE *source, Expression *lvalue ) {
     Token token = scanner(source);
     Token next_token;
-    Expression *expr;
+    Expression *expr, *expr_t, *value;
+    char *c = (char *)malloc(sizeof(char)*256);
+    c[0] = '\0';
     int i = 0;
 
     switch (token.type) {
@@ -434,15 +347,22 @@ Expression *parseExpression ( FILE *source, Expression *lvalue ) {
             (expr->v).type = PlusNode;
             (expr->v).val.op = Plus;
             expr->leftOperand = lvalue;
-            expr->rightOperand = parseValue(source);
-            return parseExpressionTail_t(source, expr);
+            value = parseValue(source);
+            expr->rightOperand = parseExpressionTail(source, value);
+            return parseExpression(source, expr);
         case MinusOp:
             expr = (Expression *)malloc( sizeof(Expression) );
             (expr->v).type = MinusNode;
             (expr->v).val.op = Minus;
             expr->leftOperand = lvalue;
-            expr->rightOperand = parseValue(source);
-            return parseExpressionTail_t(source, expr);
+            value = parseValue(source);
+            expr->rightOperand = parseExpressionTail(source, value);
+            return parseExpression(source, expr);
+        case MulOp:
+        case DivOp:
+            ungetc(token.tok[0], source);
+            expr_t = parseExpressionTail(source, lvalue);
+            return parseExpression(source, expr_t);
         case Identifier:
             next_token = scanner(source);
             if (next_token.type != AssignmentOp) {
@@ -455,13 +375,13 @@ Expression *parseExpression ( FILE *source, Expression *lvalue ) {
             ungetc(' ', source);
             while (i > 0)
                 ungetc(token.tok[--i], source);
-            return NULL;
+            return lvalue;
         case PrintOp:
             ungetc(' ', source);
             ungetc(token.tok[0], source);
-            return NULL;
+            return lvalue;
         case EOFsymbol:
-            return NULL;
+            return lvalue;
         default:
             printf("Syntax Error: Expect a numeric value or an identifier %s\n", token.tok);
             exit(1);
@@ -469,7 +389,7 @@ Expression *parseExpression ( FILE *source, Expression *lvalue ) {
 }
 
 //
-// Stmt -> id assign Val Expr
+// Stmt -> id assign Expr
 //      |  printn id
 //
 Statement parseStatement ( FILE *source, Token token ) {
@@ -482,6 +402,7 @@ Statement parseStatement ( FILE *source, Token token ) {
             if (next_token.type == AssignmentOp) {
                 value = parseValue(source);
                 expr = parseExpression(source, value);
+                //value = NULL;
                 return makeAssignmentNode(token.tok, value, expr);
             }
             else {
