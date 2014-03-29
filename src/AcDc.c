@@ -237,7 +237,7 @@ Expression *parseValue ( FILE *source ) {
         case Identifier:
             (value->v).type = IdentifierV;
             (value->v).val.id = (char *)malloc(sizeof(char)*256);
-            strncpy((value->v).val.id, token.tok, strlen(token.tok));
+            strcpy((value->v).val.id, token.tok);
             break;
         case IntValue:
             (value->v).type = IntConst;
@@ -322,8 +322,8 @@ Expression *parseExpressionTail ( FILE *source, Expression *lvalue ) {
 //        |  Expr
 //
 // JJJ: I have an idea about grammars
-// 
-// Stmt -> id assign Expr 
+//
+// Stmt -> id assign Expr
 //      |  print id
 //
 // Expr -> Expr_t plus Expr
@@ -466,7 +466,7 @@ Declaration makeDeclarationNode ( Token declare_type, Token identifier ) {
         default:
             break;
     }
-    strncpy(tree_node.name, identifier.tok, strlen(identifier.tok));
+    strcpy(tree_node.name, identifier.tok);
 
     return tree_node;
 }
