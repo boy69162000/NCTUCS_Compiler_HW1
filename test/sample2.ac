@@ -2,16 +2,13 @@ i a
 f b
 i c
 i d
-<<<<<<< HEAD
 a = 1
 b = 2
-=======
 a = 2
 b = 2.1
->>>>>>> 4eb80bdb0e0b67a16e111fa5c8fa707998e31aa3
 c = 1
 d = 2
-c = a + b + c + d
+c = a + c + c + d
 p c
 p d
 p b

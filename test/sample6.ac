@@ -1,15 +1,20 @@
-i a
+i asdf
 f b
-i c
+i cc
 i d
-f e
-a = 1
+f eeeeeeeeeee
+asdf = 1
 b = 2.1
-c = 1
+cc = 1
 d = 2
+<<<<<<< HEAD
 e=b+a*c*b+c+a+d*b
 p a
+=======
+eeeeeeeeeee = b * asdf + d * b + cc
+p asdf
+>>>>>>> fa18fdd33f324e6d3ddddf4238243e0c45980b79
 p b
-p c
+p cc
 p d
-p e
+p eeeeeeeeeee

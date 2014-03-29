@@ -27,7 +27,7 @@ int main (int argc, char *argv[]) {
             fclose(source);
             symtab = build(program);
             check(&program, &symtab);
-            gencode(program, target);
+            gencode(program, &symtab, target);
             fclose(target);
         }
     }
@@ -623,6 +623,18 @@ DataType lookup_table ( SymbolTable *table, char *c ) {
     exit(1);
 }
 
+char lookup_for_print (SymbolTable *table, char *c) {
+    int i;
+
+    for(i = 0 ; i < 23 ; i++)
+        if(strcmp(table->name[i], c) == 0)
+            return 'a' + i;       // map the variable to single char
+
+    printf("Error : identifier %s is not declared\n", c);//error
+    exit(1);
+
+}
+
 void checkexpression ( Expression *expr, SymbolTable *table ) {
     char *c = (char *)malloc(sizeof(char)*256);
     if (expr->leftOperand == NULL && expr->rightOperand == NULL) {
@@ -712,12 +724,12 @@ void fprint_op ( FILE *target, ValueType op ) {
     }
 }
 
-void fprint_expr ( FILE *target, Expression *expr) {
+void fprint_expr ( FILE *target, Expression *expr, SymbolTable *symtab) {
 
     if (expr->leftOperand == NULL) {
         switch ( (expr->v).type ) {
             case IdentifierV:
-                fprintf(target,"l%s\n",(expr->v).val.id);
+                fprintf(target,"l%c\n",lookup_for_print(symtab, (expr->v).val.id));
                 break;
             case IntConst:
                 fprintf(target,"%d\n",(expr->v).val.ivalue);
@@ -731,19 +743,19 @@ void fprint_expr ( FILE *target, Expression *expr) {
         }
     }
     else {
-        fprint_expr(target, expr->leftOperand);
+        fprint_expr(target, expr->leftOperand, symtab);
         if (expr->rightOperand == NULL) {
             fprintf(target,"5k\n");
         }
         else {
             //fprint_right_expr(expr->rightOperand);
-            fprint_expr(target, expr->rightOperand);
+            fprint_expr(target, expr->rightOperand, symtab);
             fprint_op(target, (expr->v).type);
         }
     }
 }
 
-void gencode (Program prog, FILE *target) {
+void gencode (Program prog, SymbolTable *symtab, FILE *target) {
     Statements *stmts = prog.statements;
     Statement stmt;
 
@@ -751,11 +763,11 @@ void gencode (Program prog, FILE *target) {
         stmt = stmts->first;
         switch (stmt.type) {
             case Print:
-                fprintf(target,"l%s\n",stmt.stmt.variable);
+                fprintf(target, "l%c\n", lookup_for_print(symtab, stmt.stmt.variable));
                 fprintf(target,"p\n");
                 break;
             case Assignment:
-                fprint_expr(target, stmt.stmt.assign.expr);
+                fprint_expr(target, stmt.stmt.assign.expr, symtab);
                 /*
                    if(stmt.stmt.assign.type == Int){
                    fprintf(target,"0 k\n");
@@ -763,7 +775,7 @@ void gencode (Program prog, FILE *target) {
                    else if(stmt.stmt.assign.type == Float){
                    fprintf(target,"5 k\n");
                    }*/
-                fprintf(target,"s%s\n",stmt.stmt.assign.id);
+                fprintf(target,"s%c\n", lookup_for_print(symtab, stmt.stmt.assign.id));
                 fprintf(target,"0 k\n");
                 break;
         }
