@@ -6,6 +6,8 @@
 
 // XXX: use strncpy instead of strcpy Orz
 // fine
+// my fault Orz
+
 int main (int argc, char *argv[]) {
     FILE *source, *target;
     Program program;
@@ -18,16 +20,16 @@ int main (int argc, char *argv[]) {
             printf("can't open the source file\n");
             exit(2);
         }
-        else if ( !target ) {
+        else if (!target) {
             printf("can't open the target file\n");
             exit(2);
         }
         else {
             program = parser(source);
             fclose(source);
-            symtab = build(program);
+            symtab = build(&program);
             check(&program, &symtab);
-            gencode(program, &symtab, target);
+            gencode(&program, &symtab, target);
             fclose(target);
         }
     }
@@ -44,16 +46,19 @@ int main (int argc, char *argv[]) {
   Scanning
  *********************************************/
 Token getNumericToken (FILE *source, int c) {
-// token: \d+\.\d+
+// token: \d+       -> IntValue
+//        \d+\.\d+  -> FloatValue
+
     Token token;
     int i = 0;
 
-    while ( isdigit(c) ) {
+    while (isdigit(c)) {
         token.tok[i++] = c;
         c = fgetc(source);
     }
 
-    if ( c != '.' ) {
+    // token: \d+ -> IntValue
+    if (c != '.') {
         ungetc(c, source);
         token.tok[i] = '\0';
         token.type = IntValue;
@@ -63,13 +68,14 @@ Token getNumericToken (FILE *source, int c) {
     token.tok[i++] = '.';
 
     c = fgetc(source);
-    if ( !isdigit(c) ) {
+    if (!isdigit(c)) {
         ungetc(c, source);
         printf("Expect a digit : %c\n", c);
         exit(1);
     }
 
-    while ( isdigit(c) ) {
+    // token: \d+\.\d+ -> FloatValue
+    while (isdigit(c)) {
         token.tok[i++] = c;
         c = fgetc(source);
     }
@@ -80,26 +86,29 @@ Token getNumericToken (FILE *source, int c) {
     return token;
 }
 
-Token scanner ( FILE *source ) {
+
+// aka get-next-token
+Token scanner (FILE *source) {
     int c;
     Token token;
 
     // scan till end-of-file
-    while ( !feof(source) ) {
+    while (!feof(source)) {
         c = fgetc(source);
 
         // token: ignore captiously spaces
-        while( isspace(c) ) c = fgetc(source);
+        while(isspace(c))
+            c = fgetc(source);
 
-        // token: \d+\.\d+
-        if( isdigit(c) )
+        // token: IntValue or FloatValue
+        if(isdigit(c))
             return getNumericToken(source, c);
 
         // token: variables or declarations
         token.tok[0] = c;
         token.tok[1] = '\0';
-        if ( islower(c) ) {
-            // pick up the next chak
+        if (islower(c)) {
+            // pick up the next char
             int cn = fgetc(source);
 
             // case: \w, c + cn = char + space
@@ -167,7 +176,7 @@ Token scanner ( FILE *source ) {
 /********************************************************
   Parsing
  *********************************************************/
-Declaration parseDeclaration ( FILE *source, Token token ) {
+Declaration parseDeclaration (FILE *source, Token token) {
     Token token2;
     switch (token.type) {
         case FloatDeclaration:
@@ -181,7 +190,7 @@ Declaration parseDeclaration ( FILE *source, Token token ) {
                 printf("Syntax Error: %s cannot be used as id\n", token2.tok);
                 exit(1);
             }
-            return makeDeclarationNode( token, token2 );
+            return makeDeclarationNode(token, token2);
 
         default:
             // only support float & int
@@ -192,18 +201,20 @@ Declaration parseDeclaration ( FILE *source, Token token ) {
 
 // in AC, program = Declarations + Statements
 // parse declarations here
-Declarations *parseDeclarations ( FILE *source ) {
+Declarations *parseDeclarations (FILE *source) {
     Token token = scanner(source);
+
     Declaration decl;
     Declarations *decls;
     int i = 0;
+
     switch (token.type) {
         // only play with float & int declarations
         case FloatDeclaration:
         case IntegerDeclaration:
             decl = parseDeclaration(source, token);
             decls = parseDeclarations(source);
-            return makeDeclarationTree( decl, decls );
+            return makeDeclarationTree(decl, decls);
 
         // shouldn't here //actually they should be here
         // I mean, print / id and eof shouldn't be in declaration list
@@ -227,16 +238,17 @@ Declarations *parseDeclarations ( FILE *source ) {
 }
 
 // id, IntConst, FloatConst
-Expression *parseValue ( FILE *source ) {
+Expression *parseValue (FILE *source) {
     Token token = scanner(source);
-    Expression *value = (Expression *)malloc( sizeof(Expression) );
+
+    Expression *value = (Expression *)malloc(sizeof(Expression));
     value->leftOperand = value->rightOperand = NULL;
 
 
     switch (token.type) {
         case Identifier:
             (value->v).type = IdentifierV;
-            (value->v).val.id = (char *)malloc(sizeof(char)*256);
+            (value->v).val.id = (char *)malloc(256);
             strcpy((value->v).val.id, token.tok);
             break;
         case IntValue:
@@ -255,24 +267,25 @@ Expression *parseValue ( FILE *source ) {
     return value;
 }
 
-Expression *parseExpressionTail ( FILE *source, Expression *lvalue ) {
+Expression *parseExpressionTail (FILE *source, Expression *lvalue) {
     Token token = scanner(source);
+
     Token next_token;
     Expression *expr;
     int i = 0;
 
     switch (token.type) {
         case MulOp:
-            expr = (Expression *)malloc( sizeof(Expression) );
+            expr = (Expression *)malloc(sizeof(Expression));
             (expr->v).type = MulNode;
             (expr->v).val.op = Mul;
             expr->leftOperand = lvalue;
             expr->rightOperand = parseValue(source);
             return parseExpressionTail(source, expr);
         case DivOp:
-            expr = (Expression *)malloc( sizeof(Expression) );
-            (expr->v).type = MinusNode;
-            (expr->v).val.op = Minus;
+            expr = (Expression *)malloc(sizeof(Expression));
+            (expr->v).type = DivNode;
+            (expr->v).val.op = Div;
             expr->leftOperand = lvalue;
             expr->rightOperand = parseValue(source);
             return parseExpressionTail(source, expr);
@@ -306,20 +319,8 @@ Expression *parseExpressionTail ( FILE *source, Expression *lvalue ) {
 }
 
 //
-// Expr -> plus Val Expr
-//      |  minus Val Expr
-//      |  \
-//
 // XXX: we need a new grammar to handle ambiguity
 // add a new type of Expression Expr_t
-//
-// Expr -> plus Val Expr_t
-//      |  minus Val Expr_t
-//      |  \
-//
-// Expr_t -> mul Val Expr
-//        |  div Val Expr
-//        |  Expr
 //
 // JJJ: I have an idea about grammars
 //
@@ -334,17 +335,19 @@ Expression *parseExpressionTail ( FILE *source, Expression *lvalue ) {
 //        |  Val div Expr_t
 //        |  Val
 //
-Expression *parseExpression ( FILE *source, Expression *lvalue ) {
+Expression *parseExpression (FILE *source, Expression *lvalue) {
     Token token = scanner(source);
+
     Token next_token;
     Expression *expr, *expr_t, *value;
-    char *c = (char *)malloc(sizeof(char)*256);
+
+    char *c = (char *)malloc(256);
     c[0] = '\0';
     int i = 0;
 
     switch (token.type) {
         case PlusOp:
-            expr = (Expression *)malloc( sizeof(Expression) );
+            expr = (Expression *)malloc(sizeof(Expression));
             (expr->v).type = PlusNode;
             (expr->v).val.op = Plus;
             expr->leftOperand = lvalue;
@@ -352,7 +355,7 @@ Expression *parseExpression ( FILE *source, Expression *lvalue ) {
             expr->rightOperand = parseExpressionTail(source, value);
             return parseExpression(source, expr);
         case MinusOp:
-            expr = (Expression *)malloc( sizeof(Expression) );
+            expr = (Expression *)malloc(sizeof(Expression));
             (expr->v).type = MinusNode;
             (expr->v).val.op = Minus;
             expr->leftOperand = lvalue;
@@ -393,7 +396,7 @@ Expression *parseExpression ( FILE *source, Expression *lvalue ) {
 // Stmt -> id assign Expr
 //      |  printn id
 //
-Statement parseStatement ( FILE *source, Token token ) {
+Statement parseStatement (FILE *source, Token token) {
     Token next_token;
     Expression *value, *expr;
 
@@ -403,7 +406,6 @@ Statement parseStatement ( FILE *source, Token token ) {
             if (next_token.type == AssignmentOp) {
                 value = parseValue(source);
                 expr = parseExpression(source, value);
-                //value = NULL;
                 return makeAssignmentNode(token.tok, value, expr);
             }
             else {
@@ -418,7 +420,6 @@ Statement parseStatement ( FILE *source, Token token ) {
                 printf("Syntax Error: Expect an identifier %s\n", next_token.tok);
                 exit(1);
             }
-            break;
         default:
             printf("Syntax Error: Expect a statement %s\n", token.tok);
             exit(1);
@@ -429,7 +430,7 @@ Statement parseStatement ( FILE *source, Token token ) {
 // Stmts -> Stmt Stmts
 //       |  \
 //
-Statements *parseStatements ( FILE * source ) {
+Statements *parseStatements (FILE * source) {
 
     Token token = scanner(source);
     Statement stmt;
@@ -453,7 +454,7 @@ Statements *parseStatements ( FILE * source ) {
 /*********************************************************************
   Build AST
  **********************************************************************/
-Declaration makeDeclarationNode ( Token declare_type, Token identifier ) {
+Declaration makeDeclarationNode (Token declare_type, Token identifier) {
     Declaration tree_node;
 
     switch (declare_type.type) {
@@ -471,8 +472,9 @@ Declaration makeDeclarationNode ( Token declare_type, Token identifier ) {
     return tree_node;
 }
 
-Declarations *makeDeclarationTree ( Declaration decl, Declarations *decls ) {
-    Declarations *new_tree = (Declarations *)malloc( sizeof(Declarations) );
+Declarations *makeDeclarationTree (Declaration decl, Declarations *decls) {
+    Declarations *new_tree = (Declarations *)malloc(sizeof(Declarations));
+
     new_tree->first = decl;
     new_tree->rest = decls;
 
@@ -480,33 +482,33 @@ Declarations *makeDeclarationTree ( Declaration decl, Declarations *decls ) {
 }
 
 
-Statement makeAssignmentNode ( char *id, Expression *v, Expression *expr_tail ) {
+Statement makeAssignmentNode (char *id, Expression *value, Expression *expr_tail) {
     Statement stmt;
     AssignmentStatement assign;
 
     stmt.type = Assignment;
-    assign.id = (char *)malloc(sizeof(char) * 256);
+    assign.id = (char *)malloc(256);
     strcpy(assign.id, id);
-    if (expr_tail == NULL)
-        assign.expr = v;
-    else
-        assign.expr = expr_tail;
+
+    assign.expr = expr_tail == NULL ? value : expr_tail;
     stmt.stmt.assign = assign;
 
     return stmt;
 }
 
-Statement makePrintNode ( char *id ) {
+Statement makePrintNode (char *id) {
     Statement stmt;
+
     stmt.type = Print;
-    stmt.stmt.variable = (char *)malloc(sizeof(char)*256);
+    stmt.stmt.variable = (char *)malloc(256);
     strcpy(stmt.stmt.variable, id);
 
     return stmt;
 }
 
-Statements *makeStatementTree ( Statement stmt, Statements *stmts ) {
-    Statements *new_tree = (Statements *)malloc( sizeof(Statements) );
+Statements *makeStatementTree (Statement stmt, Statements *stmts) {
+    Statements *new_tree = (Statements *)malloc(sizeof(Statements));
+
     new_tree->first = stmt;
     new_tree->rest = stmts;
 
@@ -514,7 +516,7 @@ Statements *makeStatementTree ( Statement stmt, Statements *stmts ) {
 }
 
 /* parser */
-Program parser ( FILE *source ) {
+Program parser (FILE *source) {
     Program program;
 
     // in AC, program = Declarations + Statements
@@ -528,42 +530,44 @@ Program parser ( FILE *source ) {
 /********************************************************
   Build symbol table
  *********************************************************/
-void InitializeTable ( SymbolTable *table ) {
+void InitializeTable (SymbolTable *table) {
     int i;
 
+    // clear the table
     for (i = 0 ; i < 23; i++)
         table->table[i] = Notype;
 }
 
-void add_table ( SymbolTable *table, char *c, DataType t , int index) {
-    // XXX: the table should fix to use a name as key
+void add_table (SymbolTable *table, char *c, DataType t, int index) {
 
     if (table->table[index] != Notype) {
-        printf("Error : id %s has been declared\n", c);//error
+        printf("Error : id %s has been declared\n", c);
         exit(1);
     }
     strcpy(table->name[index], c);
     table->table[index] = t;
 }
 
-SymbolTable build ( Program program ) {
+SymbolTable build (Program *program) {
     SymbolTable table;
-    Declarations *decls = program.declarations;
+
+    Declarations *decls = program->declarations;
     Declaration current;
     int i = 0;
 
     InitializeTable(&table);
 
+    // add all declarations to symbol table
     while (decls != NULL) {
         current = decls->first;
-        table.name[i] = (char *)malloc(sizeof(char)*256);
+        table.name[i] = (char *)malloc(256);
         add_table(&table, current.name, current.type, i++);
         decls = decls->rest;
     }
 
     // clear unused nodes
     while (i < 23) {
-        table.name[i] = (char *)malloc(sizeof(char)*256);
+        table.name[i] = (char *)malloc(256);
         table.name[i++][0] = '\0';
     }
 
@@ -575,7 +579,7 @@ SymbolTable build ( Program program ) {
   Type checking
  *********************************************************************/
 
-void convertType ( Expression * old, DataType type ) {
+void convertType (Expression *old, DataType type) {
     // float to int
     if (old->type == Float && type == Int) {
         printf("error : can't convert float to integer\n");
@@ -583,11 +587,12 @@ void convertType ( Expression * old, DataType type ) {
     }
     // int to float
     if (old->type == Int && type == Float) {
-        Expression *tmp = (Expression *)malloc( sizeof(Expression) );
+        Expression *tmp = (Expression *)malloc(sizeof(Expression));
         if (old->v.type == IdentifierV)
             printf("convert to float %s \n",old->v.val.id);
         else
             printf("convert to float %d \n", old->v.val.ivalue);
+
         tmp->v = old->v;
         tmp->leftOperand = old->leftOperand;
         tmp->rightOperand = old->rightOperand;
@@ -603,7 +608,7 @@ void convertType ( Expression * old, DataType type ) {
     }
 }
 
-DataType generalize ( Expression *left, Expression *right ) {
+DataType generalize (Expression *left, Expression *right) {
     if (left->type == Float || right->type == Float) {
         printf("generalize : float\n");
         return Float;
@@ -612,14 +617,14 @@ DataType generalize ( Expression *left, Expression *right ) {
     return Int;
 }
 
-DataType lookup_table ( SymbolTable *table, char *c ) {
+DataType lookup_table (SymbolTable *table, char *c) {
     int i;
 
     for(i = 0 ; i < 23 ; i++)
         if(strcmp(table->name[i], c) == 0)
             return table->table[i];
 
-    printf("Error : identifier %s is not declared\n", c);//error
+    printf("Error : identifier %s is not declared\n", c);
     exit(1);
 }
 
@@ -630,13 +635,14 @@ char lookup_for_print (SymbolTable *table, char *c) {
         if(strcmp(table->name[i], c) == 0)
             return 'a' + i;       // map the variable to single char
 
-    printf("Error : identifier %s is not declared\n", c);//error
+    printf("Error : identifier %s is not declared\n", c);
     exit(1);
 
 }
 
-void checkexpression ( Expression *expr, SymbolTable *table ) {
-    char *c = (char *)malloc(sizeof(char)*256);
+void checkexpression (Expression *expr, SymbolTable *table) {
+    char *c = (char *)malloc(256);
+
     if (expr->leftOperand == NULL && expr->rightOperand == NULL) {
         switch (expr->v.type) {
             case IdentifierV:
@@ -652,7 +658,7 @@ void checkexpression ( Expression *expr, SymbolTable *table ) {
                 printf("constant : float\n");
                 expr->type = Float;
                 break;
-                //case PlusNode: case MinusNode: case MulNode: case DivNode:
+            //case PlusNode: case MinusNode: case MulNode: case DivNode:
             default:
                 break;
         }
@@ -665,16 +671,16 @@ void checkexpression ( Expression *expr, SymbolTable *table ) {
         checkexpression(right, table);
 
         DataType type = generalize(left, right);
-        convertType(left, type);//left->type = type;//converto
-        convertType(right, type);//right->type = type;//converto
+        convertType(left, type);
+        convertType(right, type);
         expr->type = type;
     }
 }
 
-void checkstmt ( Statement *stmt, SymbolTable *table ) {
+void checkstmt (Statement *stmt, SymbolTable *table) {
     if (stmt->type == Assignment) {
         AssignmentStatement assign = stmt->stmt.assign;
-        printf("assignment : %s \n",assign.id);
+        printf("assignment : %s \n", assign.id);
         checkexpression(assign.expr, table);
         stmt->stmt.assign.type = lookup_table(table, assign.id);
         if (assign.expr->type == Float && stmt->stmt.assign.type == Int) {
@@ -692,10 +698,10 @@ void checkstmt ( Statement *stmt, SymbolTable *table ) {
         printf("error : statement error\n");//error
 }
 
-void check(  Program *program, SymbolTable *table ) {
+void check(Program *program, SymbolTable *table) {
     Statements *stmts = program->statements;
     while (stmts != NULL) {
-        checkstmt(&stmts->first,table);
+        checkstmt(&stmts->first, table);
         stmts = stmts->rest;
     }
 }
@@ -704,84 +710,76 @@ void check(  Program *program, SymbolTable *table ) {
 /***********************************************************************
   Code generation
  ************************************************************************/
-void fprint_op ( FILE *target, ValueType op ) {
+void fprint_op (FILE *target, ValueType op) {
     switch (op) {
         case MinusNode:
-            fprintf(target,"-\n");
+            fprintf(target, "-\n");
             break;
         case PlusNode:
-            fprintf(target,"+\n");
+            fprintf(target, "+\n");
             break;
         case MulNode:
-            fprintf(target,"*\n");
+            fprintf(target, "*\n");
             break;
         case DivNode:
-            fprintf(target,"\\\n");
+            fprintf(target, "\\\n");
             break;
         default:
-            fprintf(target,"Error in fprintf_op ValueType = %d\n",op);
+            fprintf(target, "Error in fprintf_op ValueType = %d\n", op);
             break;
     }
 }
 
-void fprint_expr ( FILE *target, Expression *expr, SymbolTable *symtab) {
+void fprint_expr (FILE *target, Expression *expr, SymbolTable *symtab) {
 
     if (expr->leftOperand == NULL) {
-        switch ( (expr->v).type ) {
+        switch ((expr->v).type) {
             case IdentifierV:
-                fprintf(target,"l%c\n",lookup_for_print(symtab, (expr->v).val.id));
+                fprintf(target, "l%c\n", lookup_for_print(symtab, (expr->v).val.id));
                 break;
             case IntConst:
-                fprintf(target,"%d\n",(expr->v).val.ivalue);
+                fprintf(target, "%d\n", (expr->v).val.ivalue);
                 break;
             case FloatConst:
-                fprintf(target,"%f\n", (expr->v).val.fvalue);
+                fprintf(target, "%f\n", (expr->v).val.fvalue);
                 break;
             default:
-                fprintf(target,"Error In fprint_left_expr. (expr->v).type=%d\n",(expr->v).type);
+                fprintf(target, "Error In fprint_left_expr. (expr->v).type=%d\n", (expr->v).type);
                 break;
         }
     }
     else {
         fprint_expr(target, expr->leftOperand, symtab);
         if (expr->rightOperand == NULL) {
-            fprintf(target,"5k\n");
+            fprintf(target, "5k\n");
         }
         else {
-            //fprint_right_expr(expr->rightOperand);
             fprint_expr(target, expr->rightOperand, symtab);
             fprint_op(target, (expr->v).type);
         }
     }
 }
 
-void gencode (Program prog, SymbolTable *symtab, FILE *target) {
-    Statements *stmts = prog.statements;
+void gencode (Program *prog, SymbolTable *symtab, FILE *target) {
+    Statements *stmts = prog->statements;
     Statement stmt;
 
     while (stmts != NULL) {
         stmt = stmts->first;
+
         switch (stmt.type) {
             case Print:
                 fprintf(target, "l%c\n", lookup_for_print(symtab, stmt.stmt.variable));
-                fprintf(target,"p\n");
+                fprintf(target, "p\n");
                 break;
             case Assignment:
                 fprint_expr(target, stmt.stmt.assign.expr, symtab);
-                /*
-                   if(stmt.stmt.assign.type == Int){
-                   fprintf(target,"0 k\n");
-                   }
-                   else if(stmt.stmt.assign.type == Float){
-                   fprintf(target,"5 k\n");
-                   }*/
-                fprintf(target,"s%c\n", lookup_for_print(symtab, stmt.stmt.assign.id));
-                fprintf(target,"0 k\n");
+                fprintf(target, "s%c\n", lookup_for_print(symtab, stmt.stmt.assign.id));
+                fprintf(target, "0 k\n");
                 break;
         }
         stmts = stmts->rest;
     }
-
 }
 
 
@@ -827,7 +825,7 @@ void print_expr (Expression *expr) {
     }
 }
 
-void test_parser ( FILE *source ) {
+void test_parser (FILE *source) {
     Declarations *decls;
     Statements *stmts;
     Declaration decl;

@@ -18,12 +18,12 @@ typedef enum TokenType { FloatDeclaration, IntegerDeclaration,
                          AssignmentOp,
                          PlusOp, MinusOp, MulOp, DivOp,
                          Identifier,
-                         //Alphabet,  // XXX: not to use //now in use
+                         //Alphabet,  // XXX: not to use //now in use // now not
                          IntValue, FloatValue,
                          EOFsymbol } TokenType;
 
 typedef enum DataType  { Int, Float, Notype } DataType;
-typedef enum StmtType  { Print, Assignment } StmtType;
+typedef enum StmtType  { Print, Assignment }  StmtType;
 
 typedef enum ValueType { IdentifierV,
                          IntConst, FloatConst,
@@ -71,7 +71,7 @@ typedef struct Declarations {
 typedef struct Value {
     ValueType type;
     union {
-        char* id;       /* if the node represent the access of the identifier */
+        char *id;      /* if the node represent the access of the identifier */
         Operation op;  /* store +, -, *, /, =, type_convert */
         int ivalue;    /* for integer constant in the expression */
         float fvalue;  /* for float constant */
@@ -94,7 +94,7 @@ typedef struct Expression {
 
 /* For one assignment statement */
 typedef struct AssignmentStatement {
-    char* id;
+    char *id;
     Expression *expr;
     DataType type;      /* For type checking to store the type of all expression on the right. */
 } AssignmentStatement;
@@ -104,7 +104,7 @@ typedef struct AssignmentStatement {
 typedef struct Statement {
     StmtType type;
     union {
-        char* variable;              /* print statement */
+        char *variable;              /* print statement */
         AssignmentStatement assign;
     } stmt;
 } Statement;
@@ -129,48 +129,50 @@ typedef struct SymbolTable {
 
 
 // scanning
-Token getNumericToken( FILE *source, int c );
-Token scanner( FILE *source );
+Token getNumericToken(FILE *source, int c);
+Token scanner(FILE *source);
 
 // parsing
-Declaration makeDeclarationNode( Token declare_type, Token identifier );
-Declarations *makeDeclarationTree( Declaration decl, Declarations *decls );
-Declaration parseDeclaration( FILE *source, Token token );
-Declarations *parseDeclarations( FILE *source );
-Expression *parseValue( FILE *source );
-Expression *parseExpressionTail( FILE *source, Expression *lvalue );
-Expression *parseExpression( FILE *source, Expression *lvalue );
-Expression *parseExpressionTail_t( FILE *source, Expression *lvalue );
-Expression *parseExpression_t( FILE *source, Expression *lvalue );
+Declaration   makeDeclarationNode(Token declare_type, Token identifier);
+Declarations *makeDeclarationTree(Declaration decl, Declarations *decls);
+Declaration   parseDeclaration(FILE *source, Token token);
+Declarations *parseDeclarations(FILE *source);
+
+Expression *parseValue(FILE *source);
+Expression *parseExpressionTail(FILE *source, Expression *lvalue);
+Expression *parseExpression(FILE *source, Expression *lvalue);
+Expression *parseExpressionTail_t(FILE *source, Expression *lvalue);
+Expression *parseExpression_t(FILE *source, Expression *lvalue);
+
 
 // build AST
-Statement makeAssignmentNode( char* id, Expression *v, Expression *expr_tail );
-Statement makePrintNode( char* id );
-Statements *makeStatementTree( Statement stmt, Statements *stmts );
-Statement parseStatement( FILE *source, Token token );
-Statements *parseStatements( FILE * source );
-Program parser( FILE *source );
+Statement   makeAssignmentNode(char *id, Expression *value, Expression *expr_tail);
+Statement   makePrintNode(char *id);
+Statements *makeStatementTree(Statement stmt, Statements *stmts);
+Statement   parseStatement(FILE *source, Token token);
+Statements *parseStatements(FILE *source);
+Program parser(FILE *source);
 
 // symbol table
-void InitializeTable( SymbolTable *table );
-void add_table( SymbolTable *table, char* c, DataType t , int index);
-SymbolTable build( Program program );
+void InitializeTable(SymbolTable *table);
+void add_table(SymbolTable *table, char *c, DataType t , int index);
+SymbolTable build(Program *program);
 
 // type checking
-void convertType( Expression * old, DataType type );
-DataType generalize( Expression *left, Expression *right );
-DataType lookup_table( SymbolTable *table, char* c );
-void checkexpression( Expression * expr, SymbolTable * table );
-void checkstmt( Statement *stmt, SymbolTable * table );
-void check( Program *program, SymbolTable * table);
+void convertType(Expression *old, DataType type);
+DataType generalize(Expression *left, Expression *right);
+DataType lookup_table(SymbolTable *table, char *c);
+void checkexpression(Expression *expr, SymbolTable *table);
+void checkstmt(Statement *stmt, SymbolTable *table);
+void check(Program *program, SymbolTable *table);
 
 // codegen
-void fprint_op( FILE *target, ValueType op );
-void fprint_expr( FILE *target, Expression *expr, SymbolTable *symtab);
-void gencode( Program prog, SymbolTable *symtab, FILE * target );
+void fprint_op(FILE *target, ValueType op);
+void fprint_expr(FILE *target, Expression *expr, SymbolTable *symtab);
+void gencode(Program *prog, SymbolTable *symtab, FILE *target);
 
 // debug
-void print_expr( Expression *expr );
-void test_parser( FILE *source );
+void print_expr(Expression *expr);
+void test_parser(FILE *source);
 
 #endif // HEADER_H_INCLUDED
