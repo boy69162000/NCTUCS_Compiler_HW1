@@ -166,6 +166,11 @@ void checkexpression(Expression *expr, SymbolTable *table);
 void checkstmt(Statement *stmt, SymbolTable *table);
 void check(Program *program, SymbolTable *table);
 
+// optimization
+Expression *const_fold (Expression *expr, SymbolTable *table);
+void opt_stmt (Statement *stmt, SymbolTable *table);
+void optimize(Program *program, SymbolTable *table);
+
 // codegen
 void fprint_op(FILE *target, ValueType op);
 void fprint_expr(FILE *target, Expression *expr, SymbolTable *symtab);

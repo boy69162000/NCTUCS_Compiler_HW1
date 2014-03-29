@@ -29,6 +29,7 @@ int main (int argc, char *argv[]) {
             fclose(source);
             symtab = build(&program);
             check(&program, &symtab);
+            optimize(&program, &symtab);
             gencode(&program, &symtab, target);
             fclose(target);
         }
@@ -702,6 +703,42 @@ void check(Program *program, SymbolTable *table) {
     Statements *stmts = program->statements;
     while (stmts != NULL) {
         checkstmt(&stmts->first, table);
+        stmts = stmts->rest;
+    }
+}
+
+Expression *const_fold (Expression *expr, SymbolTable *table) {
+    if (expr) {
+        if (expr->leftOperand != NULL &&
+            expr->rightOperand != NULL &&
+            expr->leftOperand->leftOperand == NULL &&
+            expr->leftOperand->rightOperand == NULL &&
+            expr->rightOperand->leftOperand == NULL &&
+            expr->rightOperand->rightOperand == NULL &&
+            expr->leftOperand->v.type == IntConst &&
+            expr->rightOperand->v.type == IntConst) {
+            // fold
+        }
+        else {
+            expr->leftOperand = const_fold(expr->leftOperand, table);
+            expr->rightOperand = const_fold(expr->rightOperand, table);
+        }
+    }
+    return expr;
+}
+
+void opt_stmt(Statement *stmt, SymbolTable *table) {
+    // only need constant folding in assignment statements
+    if (stmt->type == Assignment) {
+        AssignmentStatement assign = stmt->stmt.assign;
+        assign.expr = const_fold(assign.expr, table);
+    }
+}
+
+void optimize (Program *program, SymbolTable *table) {
+    Statements *stmts = program->statements;
+    while (stmts != NULL) {
+        opt_stmt(&stmts->first, table);
         stmts = stmts->rest;
     }
 }
