@@ -141,9 +141,8 @@ Declarations *parseDeclarations(FILE *source);
 Expression *parseValue(FILE *source);
 Expression *parseExpressionTail(FILE *source, Expression *lvalue);
 Expression *parseExpression(FILE *source, Expression *lvalue);
-Expression *parseExpressionTail_t(FILE *source, Expression *lvalue);
-Expression *parseExpression_t(FILE *source, Expression *lvalue);
-
+void ExprFoldConst(Expression *expr);
+void ExprTailFoldConst(Expression *expr);
 
 // build AST
 Statement   makeAssignmentNode(char *id, Expression *value, Expression *expr_tail);

@@ -281,6 +281,7 @@ Expression *parseExpressionTail (FILE *source, Expression *lvalue) {
             (expr->v).val.op = Mul;
             expr->leftOperand = lvalue;
             expr->rightOperand = parseValue(source);
+            ExprTailFoldConst(expr);
             return parseExpressionTail(source, expr);
         case DivOp:
             expr = (Expression *)malloc(sizeof(Expression));
@@ -288,6 +289,7 @@ Expression *parseExpressionTail (FILE *source, Expression *lvalue) {
             (expr->v).val.op = Div;
             expr->leftOperand = lvalue;
             expr->rightOperand = parseValue(source);
+            ExprTailFoldConst(expr);
             return parseExpressionTail(source, expr);
         case PlusOp:
         case MinusOp:
@@ -340,9 +342,6 @@ Expression *parseExpression (FILE *source, Expression *lvalue) {
 
     Token next_token;
     Expression *expr, *expr_t, *value;
-
-    char *c = (char *)malloc(256);
-    c[0] = '\0';
     int i = 0;
 
     switch (token.type) {
@@ -353,6 +352,7 @@ Expression *parseExpression (FILE *source, Expression *lvalue) {
             expr->leftOperand = lvalue;
             value = parseValue(source);
             expr->rightOperand = parseExpressionTail(source, value);
+            ExprFoldConst(expr);
             return parseExpression(source, expr);
         case MinusOp:
             expr = (Expression *)malloc(sizeof(Expression));
@@ -361,6 +361,7 @@ Expression *parseExpression (FILE *source, Expression *lvalue) {
             expr->leftOperand = lvalue;
             value = parseValue(source);
             expr->rightOperand = parseExpressionTail(source, value);
+            ExprFoldConst(expr);
             return parseExpression(source, expr);
         case MulOp:
         case DivOp:
@@ -391,6 +392,79 @@ Expression *parseExpression (FILE *source, Expression *lvalue) {
             exit(1);
     }
 }
+
+void ExprFoldConst(Expression *expr) {
+    DataType left, right, plus;
+    int lefti, righti;
+    float leftf, rightf;
+
+    plus = (expr->v).type == PlusNode ? 1 : 0;
+    left = (expr->leftOperand->v).type;
+    right = (expr->rightOperand->v).type;
+
+    lefti = (expr->leftOperand->v).val.ivalue;
+    righti = (expr->rightOperand->v).val.ivalue;
+    leftf = (expr->leftOperand->v).val.fvalue;
+    rightf = (expr->rightOperand->v).val.fvalue;
+
+    if( left == FloatConst && right == FloatConst ) {
+        (expr->v).val.fvalue = plus ? (leftf + rightf) : (leftf - rightf);
+        (expr->v).type = FloatConst;
+        expr->leftOperand = expr->rightOperand = NULL;
+    }
+    else if( left == IntConst && right == FloatConst ) {
+        (expr->v).val.fvalue = plus ? ((float)lefti + rightf) : ((float)lefti - rightf);
+        (expr->v).type = FloatConst;
+        expr->leftOperand = expr->rightOperand = NULL;
+    }
+    else if( left == FloatConst && right == IntConst ) {
+        (expr->v).val.fvalue = plus ? (leftf + (float)righti) : (leftf - (float)righti);
+        (expr->v).type = FloatConst;
+        expr->leftOperand = expr->rightOperand = NULL;
+    }
+    else if( left == IntConst && right == IntConst ) {
+        (expr->v).val.ivalue = plus ? (lefti + righti) : (lefti - righti);
+        (expr->v).type = IntConst;
+        expr->leftOperand = expr->rightOperand = NULL;
+    }
+}
+
+void ExprTailFoldConst(Expression *expr) {
+    DataType left, right, mul;
+    int lefti, righti;
+    float leftf, rightf;
+
+    mul = (expr->v).type == MulNode ? 1 : 0;
+    left = (expr->leftOperand->v).type;
+    right = (expr->rightOperand->v).type;
+
+    lefti = (expr->leftOperand->v).val.ivalue;
+    righti = (expr->rightOperand->v).val.ivalue;
+    leftf = (expr->leftOperand->v).val.fvalue;
+    rightf = (expr->rightOperand->v).val.fvalue;
+
+    if( left == FloatConst && right == FloatConst ) {
+        (expr->v).val.fvalue = mul ? (leftf * rightf) : (leftf / rightf);
+        (expr->v).type = FloatConst;
+        expr->leftOperand = expr->rightOperand = NULL;
+    }
+    else if( left == IntConst && right == FloatConst ) {
+        (expr->v).val.fvalue = mul ? ((float)lefti * rightf) : ((float)lefti / rightf);
+        (expr->v).type = FloatConst;
+        expr->leftOperand = expr->rightOperand = NULL;
+    }
+    else if( left == FloatConst && right == IntConst ) {
+        (expr->v).val.fvalue = mul ? (leftf * (float)righti) : (leftf / (float)righti);
+        (expr->v).type = FloatConst;
+        expr->leftOperand = expr->rightOperand = NULL;
+    }
+    else if( left == IntConst && right == IntConst ) {
+        (expr->v).val.ivalue = mul ? (lefti * righti) : (lefti / righti);
+        (expr->v).type = IntConst;
+        expr->leftOperand = expr->rightOperand = NULL;
+    }
+}
+
 
 //
 // Stmt -> id assign Expr
