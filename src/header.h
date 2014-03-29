@@ -166,8 +166,8 @@ void check( Program *program, SymbolTable * table);
 
 // codegen
 void fprint_op( FILE *target, ValueType op );
-void fprint_expr( FILE *target, Expression *expr );
-void gencode( Program prog, FILE * target );
+void fprint_expr( FILE *target, Expression *expr, SymbolTable *symtab);
+void gencode( Program prog, SymbolTable *symtab, FILE * target );
 
 // debug
 void print_expr( Expression *expr );
