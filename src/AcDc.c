@@ -123,6 +123,7 @@ Token scanner ( FILE *source ) {
                     token.tok[i++] = cn;
                     cn = fgetc(source);
                 }
+                ungetc(cn, source);
                 token.tok[i] = '\0';
                 token.type = Identifier;
                 return token;
