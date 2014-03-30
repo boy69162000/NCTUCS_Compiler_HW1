@@ -164,8 +164,8 @@ void checkstmt(Statement *stmt, SymbolTable *table);
 void check(Program *program, SymbolTable *table);
 
 // optimization
-void ExprFoldConst(Expression *expr);
-void ExprTailFoldConst(Expression *expr);
+void exprFoldConst(Expression *expr);
+void exprTailFoldConst(Expression *expr);
 //Expression *const_fold (Expression *expr, SymbolTable *table);
 //void opt_stmt (Statement *stmt, SymbolTable *table);
 //void optimize(Program *program, SymbolTable *table);

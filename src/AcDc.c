@@ -282,7 +282,7 @@ Expression *parseExpressionTail (FILE *source, Expression *lvalue) {
             (expr->v).val.op = Mul;
             expr->leftOperand = lvalue;
             expr->rightOperand = parseValue(source);
-            ExprTailFoldConst(expr);
+            exprTailFoldConst(expr);
             return parseExpressionTail(source, expr);
         case DivOp:
             expr = (Expression *)malloc(sizeof(Expression));
@@ -290,7 +290,7 @@ Expression *parseExpressionTail (FILE *source, Expression *lvalue) {
             (expr->v).val.op = Div;
             expr->leftOperand = lvalue;
             expr->rightOperand = parseValue(source);
-            ExprTailFoldConst(expr);
+            exprTailFoldConst(expr);
             return parseExpressionTail(source, expr);
         case PlusOp:
         case MinusOp:
@@ -353,7 +353,7 @@ Expression *parseExpression (FILE *source, Expression *lvalue) {
             expr->leftOperand = lvalue;
             value = parseValue(source);
             expr->rightOperand = parseExpressionTail(source, value);
-            ExprFoldConst(expr);
+            exprFoldConst(expr);
             return parseExpression(source, expr);
         case MinusOp:
             expr = (Expression *)malloc(sizeof(Expression));
@@ -362,7 +362,7 @@ Expression *parseExpression (FILE *source, Expression *lvalue) {
             expr->leftOperand = lvalue;
             value = parseValue(source);
             expr->rightOperand = parseExpressionTail(source, value);
-            ExprFoldConst(expr);
+            exprFoldConst(expr);
             return parseExpression(source, expr);
         case MulOp:
         case DivOp:
@@ -713,7 +713,7 @@ void check(Program *program, SymbolTable *table) {
   Optimization
  ************************************************************************/
 
-void ExprFoldConst(Expression *expr) {
+void exprFoldConst(Expression *expr) {
     DataType left, right, plus;
     int lefti, righti;
     float leftf, rightf;
@@ -727,17 +727,18 @@ void ExprFoldConst(Expression *expr) {
     leftf = (expr->leftOperand->v).val.fvalue;
     rightf = (expr->rightOperand->v).val.fvalue;
 
-    if( left == FloatConst && right == FloatConst ) {
+    if (left == FloatConst && right == FloatConst) {
+        // only plus and minus?
         (expr->v).val.fvalue = plus ? (leftf + rightf) : (leftf - rightf);
         (expr->v).type = FloatConst;
         expr->leftOperand = expr->rightOperand = NULL;
     }
-    else if( left == IntConst && right == FloatConst ) {
+    else if (left == IntConst && right == FloatConst) {
         (expr->v).val.fvalue = plus ? ((float)lefti + rightf) : ((float)lefti - rightf);
         (expr->v).type = FloatConst;
         expr->leftOperand = expr->rightOperand = NULL;
     }
-    else if( left == FloatConst && right == IntConst ) {
+    else if (left == FloatConst && right == IntConst) {
         (expr->v).val.fvalue = plus ? (leftf + (float)righti) : (leftf - (float)righti);
         (expr->v).type = FloatConst;
         expr->leftOperand = expr->rightOperand = NULL;
@@ -749,11 +750,11 @@ void ExprFoldConst(Expression *expr) {
     }
 }
 
-void ExprTailFoldConst(Expression *expr) {
+void exprTailFoldConst (Expression *expr) {
     DataType left, right, mul;
     int lefti, righti;
     float leftf, rightf;
-    
+
     mul = (expr->v).type == MulNode ? 1 : 0;
     left = (expr->leftOperand->v).type;
     right = (expr->rightOperand->v).type;
@@ -763,22 +764,22 @@ void ExprTailFoldConst(Expression *expr) {
     leftf = (expr->leftOperand->v).val.fvalue;
     rightf = (expr->rightOperand->v).val.fvalue;
 
-    if( left == FloatConst && right == FloatConst ) {
+    if (left == FloatConst && right == FloatConst) {
         (expr->v).val.fvalue = mul ? (leftf * rightf) : (leftf / rightf);
         (expr->v).type = FloatConst;
         expr->leftOperand = expr->rightOperand = NULL;
     }
-    else if( left == IntConst && right == FloatConst ) {
+    else if (left == IntConst && right == FloatConst) {
         (expr->v).val.fvalue = mul ? ((float)lefti * rightf) : ((float)lefti / rightf);
         (expr->v).type = FloatConst;
         expr->leftOperand = expr->rightOperand = NULL;
     }
-    else if( left == FloatConst && right == IntConst ) {
+    else if (left == FloatConst && right == IntConst) {
         (expr->v).val.fvalue = mul ? (leftf * (float)righti) : (leftf / (float)righti);
         (expr->v).type = FloatConst;
         expr->leftOperand = expr->rightOperand = NULL;
     }
-    else if( left == IntConst && right == IntConst ) {
+    else if (left == IntConst && right == IntConst) {
         (expr->v).val.ivalue = mul ? (lefti * righti) : (lefti / righti);
         (expr->v).type = IntConst;
         expr->leftOperand = expr->rightOperand = NULL;
@@ -789,21 +790,21 @@ void ExprTailFoldConst(Expression *expr) {
     int lefti, righti;
     float leftf, rightf;
     DataType type;
-    
+
     if (expr) {
         expr->leftOperand = const_fold(expr->leftOperand, table);
         expr->rightOperand = const_fold(expr->rightOperand, table);
 
-        if (expr->leftOperand != NULL && 
+        if (expr->leftOperand != NULL &&
             expr->leftOperand->leftOperand == NULL &&
-            expr->leftOperand->rightOperand == NULL && 
+            expr->leftOperand->rightOperand == NULL &&
             expr->rightOperand != NULL &&
             expr->rightOperand->leftOperand == NULL &&
             expr->rightOperand->rightOperand == NULL &&
             (expr->leftOperand->v.type == IntConst  || expr->leftOperand->v.type == FloatConst) &&
             (expr->rightOperand->v.type == IntConst || expr->rightOperand->v.type == FloatConst) ) {
             if(expr->leftOperand->v.type == FloatConst || expr->rightOperand->v.type == FloatConst) {
-            }            
+            }
 
             switch( (expr->v).type ) {
                 case PlusNode:
