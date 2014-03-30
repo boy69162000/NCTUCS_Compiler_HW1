@@ -141,8 +141,6 @@ Declarations *parseDeclarations(FILE *source);
 Expression *parseValue(FILE *source);
 Expression *parseExpressionTail(FILE *source, Expression *lvalue);
 Expression *parseExpression(FILE *source, Expression *lvalue);
-void ExprFoldConst(Expression *expr);
-void ExprTailFoldConst(Expression *expr);
 
 // build AST
 Statement   makeAssignmentNode(char *id, Expression *value, Expression *expr_tail);
@@ -166,9 +164,11 @@ void checkstmt(Statement *stmt, SymbolTable *table);
 void check(Program *program, SymbolTable *table);
 
 // optimization
-Expression *const_fold (Expression *expr, SymbolTable *table);
-void opt_stmt (Statement *stmt, SymbolTable *table);
-void optimize(Program *program, SymbolTable *table);
+void ExprFoldConst(Expression *expr);
+void ExprTailFoldConst(Expression *expr);
+//Expression *const_fold (Expression *expr, SymbolTable *table);
+//void opt_stmt (Statement *stmt, SymbolTable *table);
+//void optimize(Program *program, SymbolTable *table);
 
 // codegen
 void fprint_op(FILE *target, ValueType op);
