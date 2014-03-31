@@ -853,7 +853,7 @@ void fprint_op (FILE *target, ValueType op) {
             fprintf(target, "*\n");
             break;
         case DivNode:
-            fprintf(target, "\\\n");
+            fprintf(target, "/\n");
             break;
         default:
             fprintf(target, "Error in fprintf_op ValueType = %d\n", op);
