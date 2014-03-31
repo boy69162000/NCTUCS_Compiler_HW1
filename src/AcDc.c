@@ -714,8 +714,8 @@ void check(Program *program, SymbolTable *table) {
  ************************************************************************/
 
 void exprFoldConst(Expression *expr) {
-    DataType left, right, plus;
-    int lefti, righti;
+    DataType left, right;
+    int lefti, righti, plus;
     float leftf, rightf;
 
     plus = (expr->v).type == PlusNode ? 1 : 0;
@@ -728,7 +728,7 @@ void exprFoldConst(Expression *expr) {
     rightf = (expr->rightOperand->v).val.fvalue;
 
     if (left == FloatConst && right == FloatConst) {
-        // only plus and minus?
+        // only plus and minus? //fix type
         (expr->v).val.fvalue = plus ? (leftf + rightf) : (leftf - rightf);
         (expr->v).type = FloatConst;
         expr->leftOperand = expr->rightOperand = NULL;
@@ -751,8 +751,8 @@ void exprFoldConst(Expression *expr) {
 }
 
 void exprTailFoldConst (Expression *expr) {
-    DataType left, right, mul;
-    int lefti, righti;
+    DataType left, right;
+    int lefti, righti, mul;
     float leftf, rightf;
 
     mul = (expr->v).type == MulNode ? 1 : 0;
